@@ -4,142 +4,277 @@ import { javascriptGenerator } from "blockly/javascript";
 import "blockly/blocks";
 import { Container, Typography, Box, Button, Snackbar, Alert } from "@mui/material";
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
-import RestartAltIcon from "@mui/icons-material/RestartAlt";
-import SaveIcon from "@mui/icons-material/Save";
-import CloudDownloadIcon from "@mui/icons-material/CloudDownload";
-import CloudUploadIcon from "@mui/icons-material/CloudUpload";
 
 function App() {
   const blocklyDiv = useRef(null);
   const workspaceRef = useRef(null);
   const [generatedCode, setGeneratedCode] = useState("");
+  const [outputLog, setOutputLog] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
 
   useEffect(() => {
-    // 🟢 Define Custom Blocks (Alerts, JSON, Delays, Lists, Functions)
-    Blockly.Blocks["alert_message"] = {
+    // Define custom blocks
+    Blockly.Blocks["start_block"] = {
       init: function () {
-        this.appendValueInput("TEXT")
-          .setCheck("String")
-          .appendField("Show Alert");
+        this.appendDummyInput().appendField("Start");
+        this.setNextStatement(true, null);
+        this.setColour(0);
+      },
+    };
+
+    Blockly.Blocks["logic_and"] = {
+      init: function () {
+        this.appendValueInput("A").setCheck("Boolean");
+        this.appendValueInput("B").setCheck("Boolean").appendField("AND");
+        this.setOutput(true, "Boolean");
+        this.setColour(210);
+      },
+    };
+
+    Blockly.Blocks["logic_equal"] = {
+      init: function () {
+        this.appendValueInput("A");
+        this.appendValueInput("B").appendField("=");
+        this.setOutput(true, "Boolean");
+        this.setColour(210);
+      },
+    };
+
+    Blockly.Blocks["logic_not"] = {
+      init: function () {
+        this.appendValueInput("A").setCheck("Boolean").appendField("NOT");
+        this.setOutput(true, "Boolean");
+        this.setColour(210);
+      },
+    };
+
+    Blockly.Blocks["math_sqrt"] = {
+      init: function () {
+        this.appendValueInput("NUM").setCheck("Number").appendField("Square Root");
+        this.setOutput(true, "Number");
+        this.setColour(230);
+      },
+    };
+
+    Blockly.Blocks["math_remainder"] = {
+      init: function () {
+        this.appendValueInput("A").setCheck("Number");
+        this.appendValueInput("B").setCheck("Number").appendField("mod");
+        this.setOutput(true, "Number");
+        this.setColour(230);
+      },
+    };
+
+    Blockly.Blocks["math_addition"] = {
+      init: function () {
+        this.appendValueInput("A").setCheck("Number");
+        this.appendValueInput("B").setCheck("Number").appendField("+");
+        this.setOutput(true, "Number");
+        this.setColour(230);
+      },
+    };
+
+    Blockly.Blocks["text_length"] = {
+      init: function () {
+        this.appendValueInput("TEXT").setCheck("String").appendField("Length of");
+        this.setOutput(true, "Number");
+        this.setColour(160);
+      },
+    };
+
+    Blockly.Blocks["text_print"] = {
+      init: function () {
+        this.appendValueInput("TEXT").setCheck("String").appendField("Print");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(160);
       },
     };
 
-    javascriptGenerator.forBlock["alert_message"] = function (block) {
-      const text = javascriptGenerator.valueToCode(block, "TEXT", javascriptGenerator.ORDER_ATOMIC) || '""';
-      return `alert(${text});\n`;
+    Blockly.Blocks["json_reader"] = {
+      init: function () {
+        this.appendValueInput("DICT").setCheck("Object").appendField("Read from JSON");
+        this.appendValueInput("KEY").setCheck("String").appendField("Key");
+        this.setOutput(true, null);
+        this.setColour(200);
+      },
     };
 
-    Blockly.Blocks["delay_function"] = {
+    Blockly.Blocks["json_set_value"] = {
       init: function () {
-        this.appendValueInput("TIME")
-          .setCheck("Number")
-          .appendField("Wait (ms)");
+        this.appendValueInput("DICT").setCheck("Object").appendField("Set JSON Value");
+        this.appendValueInput("KEY").setCheck("String").appendField("Key");
+        this.appendValueInput("VALUE").appendField("Value");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(200);
+      },
+    };
+
+    Blockly.Blocks["repeat_time_loop"] = {
+      init: function () {
+        this.appendValueInput("TIMES").setCheck("Number").appendField("Repeat");
+        this.appendStatementInput("DO").appendField("times");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
         this.setColour(120);
       },
     };
 
-    javascriptGenerator.forBlock["delay_function"] = function (block) {
-      const time = javascriptGenerator.valueToCode(block, "TIME", javascriptGenerator.ORDER_ATOMIC) || "1000";
-      return `await new Promise(resolve => setTimeout(resolve, ${time}));\n`;
-    };
-
-    Blockly.Blocks["json_parse"] = {
+    Blockly.Blocks["repeat_while_loop"] = {
       init: function () {
-        this.appendValueInput("STRING")
-          .setCheck("String")
-          .appendField("Parse JSON");
-        this.setOutput(true, "Object");
-        this.setColour(200);
-      },
-    };
-
-    javascriptGenerator.forBlock["json_parse"] = function (block) {
-      const jsonString = javascriptGenerator.valueToCode(block, "STRING", javascriptGenerator.ORDER_ATOMIC) || '""';
-      return [`JSON.parse(${jsonString})`, javascriptGenerator.ORDER_ATOMIC];
-    };
-
-    Blockly.Blocks["list_length"] = {
-      init: function () {
-        this.appendValueInput("LIST")
-          .setCheck("Array")
-          .appendField("Get List Length");
-        this.setOutput(true, "Number");
-        this.setColour(230);
-      },
-    };
-
-    javascriptGenerator.forBlock["list_length"] = function (block) {
-      const list = javascriptGenerator.valueToCode(block, "LIST", javascriptGenerator.ORDER_ATOMIC) || "[]";
-      return [`${list}.length`, javascriptGenerator.ORDER_ATOMIC];
-    };
-
-    Blockly.Blocks["function_call"] = {
-      init: function () {
-        this.appendDummyInput()
-          .appendField("Call Function")
-          .appendField(new Blockly.FieldTextInput("myFunction"), "FUNC_NAME");
+        this.appendValueInput("CONDITION").setCheck("Boolean").appendField("Repeat while");
+        this.appendStatementInput("DO").appendField("do");
         this.setPreviousStatement(true, null);
         this.setNextStatement(true, null);
-        this.setColour(290);
+        this.setColour(120);
       },
     };
 
-    javascriptGenerator.forBlock["function_call"] = function (block) {
-      const funcName = block.getFieldValue("FUNC_NAME");
-      return `${funcName}();\n`;
+    Blockly.Blocks["breakout_loop"] = {
+      init: function () {
+        this.appendDummyInput().appendField("Break out of loop");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(120);
+      },
     };
 
-    // 🟠 Initialize Blockly Workspace
+    Blockly.Blocks["count_with"] = {
+      init: function () {
+        this.appendValueInput("FROM").setCheck("Number").appendField("Count from");
+        this.appendValueInput("TO").setCheck("Number").appendField("to");
+        this.appendStatementInput("DO").appendField("do");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(120);
+      },
+    };
+
+    Blockly.Blocks["alert_block"] = {
+      init: function () {
+        this.appendValueInput("MESSAGE").setCheck("String").appendField("Alert");
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(160);
+      },
+    };
+
+    Blockly.Blocks["variable_block"] = {
+      init: function () {
+        this.appendDummyInput().appendField("Variable");
+        this.appendValueInput("VALUE").setCheck(null);
+        this.setPreviousStatement(true, null);
+        this.setNextStatement(true, null);
+        this.setColour(330);
+      },
+    };
+
     const workspace = Blockly.inject(blocklyDiv.current, {
       toolbox: {
         kind: "categoryToolbox",
         contents: [
-          { kind: "category", name: "Logic", colour: "#5C81A6", contents: [{ kind: "block", type: "controls_if" }] },
-          { kind: "category", name: "Loops", colour: "#A65C5C", contents: [{ kind: "block", type: "controls_repeat_ext" }] },
-          { kind: "category", name: "Math", colour: "#5CA65C", contents: [{ kind: "block", type: "math_number" }] },
-          { kind: "category", name: "Text", colour: "#A65CA6", contents: [{ kind: "block", type: "text" }] },
-          { kind: "category", name: "Lists", colour: "#5CA6A6", contents: [{ kind: "block", type: "lists_create_with" }, { kind: "block", type: "list_length" }] },
-          { kind: "category", name: "Variables", colour: "#A6A65C", contents: [{ kind: "block", type: "variables_get" }] },
-          { kind: "category", name: "Functions", colour: "#FF5733", contents: [{ kind: "block", type: "procedures_defnoreturn" }, { kind: "block", type: "function_call" }] },
-          {
-            kind: "category",
-            name: "Advanced",
-            colour: "#FF5733",
-            contents: [
-              { kind: "block", type: "alert_message" },
-              { kind: "block", type: "delay_function" },
-              { kind: "block", type: "json_parse" },
-            ],
-          },
+          { kind: "category", name: "Start", contents: [{ kind: "block", type: "start_block" }] },
+          { kind: "category", name: "Logic", contents: [{ kind: "block", type: "logic_and" }, { kind: "block", type: "logic_equal" }, { kind: "block", type: "logic_not" }] },
+          { kind: "category", name: "Math", contents: [{ kind: "block", type: "math_sqrt" }, { kind: "block", type: "math_remainder" }, { kind: "block", type: "math_addition" }] },
+          { kind: "category", name: "Text", contents: [{ kind: "block", type: "text_length" }, { kind: "block", type: "text_print" }] },
+          { kind: "category", name: "JSON", contents: [{ kind: "block", type: "json_reader" }, { kind: "block", type: "json_set_value" }] },
+          { kind: "category", name: "Loops", contents: [{ kind: "block", type: "repeat_time_loop" }, { kind: "block", type: "repeat_while_loop" }, { kind: "block", type: "breakout_loop" }, { kind: "block", type: "count_with" }] },
+          { kind: "category", name: "Variables", contents: [{ kind: "block", type: "variable_block" }] },
+          { kind: "category", name: "Alerts", contents: [{ kind: "block", type: "alert_block" }] },
         ],
       },
     });
 
     workspaceRef.current = workspace;
-
-    return () => {
-      if (workspaceRef.current) {
-        workspaceRef.current.dispose();
-      }
+    // Define JavaScript generators for all necessary blocks
+    javascriptGenerator.forBlock["repeat_while_loop"] = function (block) {
+      const condition = javascriptGenerator.valueToCode(
+        block,
+        "CONDITION",
+        javascriptGenerator.ORDER_ATOMIC
+      ) || "false";
+      const statements = javascriptGenerator.statementToCode(block, "DO");
+      return `while (${condition}) {\n${statements}}\n`;
     };
+
+    javascriptGenerator.forBlock["logic_and"] = function (block) {
+      const A = javascriptGenerator.valueToCode(block, "A", javascriptGenerator.ORDER_ATOMIC) || "false";
+      const B = javascriptGenerator.valueToCode(block, "B", javascriptGenerator.ORDER_ATOMIC) || "false";
+      return [`(${A} && ${B})`, javascriptGenerator.ORDER_LOGICAL_AND];
+    };
+
+    javascriptGenerator.forBlock["logic_or"] = function (block) {
+      const A = javascriptGenerator.valueToCode(block, "A", javascriptGenerator.ORDER_ATOMIC) || "false";
+      const B = javascriptGenerator.valueToCode(block, "B", javascriptGenerator.ORDER_ATOMIC) || "false";
+      return [`(${A} || ${B})`, javascriptGenerator.ORDER_LOGICAL_OR];
+    };
+
+    javascriptGenerator.forBlock["controls_if"] = function (block) {
+      let code = "";
+      let condition = javascriptGenerator.valueToCode(block, "IF0", javascriptGenerator.ORDER_NONE) || "false";
+      let statements = javascriptGenerator.statementToCode(block, "DO0");
+      code += `if (${condition}) {\n${statements}}\n`;
+
+      for (let n = 1; n <= block.elseifCount_; n++) {
+        condition = javascriptGenerator.valueToCode(block, `IF${n}`, javascriptGenerator.ORDER_NONE) || "false";
+        statements = javascriptGenerator.statementToCode(block, `DO${n}`);
+        code += `else if (${condition}) {\n${statements}}\n`;
+      }
+
+      if (block.elseCount_) {
+        statements = javascriptGenerator.statementToCode(block, "ELSE");
+        code += `else {\n${statements}}\n`;
+      }
+
+      return code;
+    };
+
+    javascriptGenerator.forBlock["controls_whileUntil"] = function (block) {
+      const condition = javascriptGenerator.valueToCode(
+        block,
+        "BOOL",
+        javascriptGenerator.ORDER_NONE
+      ) || "false";
+      const statements = javascriptGenerator.statementToCode(block, "DO");
+      return `while (${condition}) {\n${statements}}\n`;
+    };
+
+    javascriptGenerator.forBlock["math_number"] = function (block) {
+      return [block.getFieldValue("NUM"), javascriptGenerator.ORDER_ATOMIC];
+    };
+
+    javascriptGenerator.forBlock["text"] = function (block) {
+      return [`"${block.getFieldValue("TEXT")}"`, javascriptGenerator.ORDER_ATOMIC];
+    };
+
+    javascriptGenerator.forBlock["variables_set"] = function (block) {
+      const variable = block.getFieldValue("VAR");
+      const value = javascriptGenerator.valueToCode(block, "VALUE", javascriptGenerator.ORDER_ASSIGNMENT) || "null";
+      return `${variable} = ${value};\n`;
+    };
+
+    javascriptGenerator.forBlock["variables_get"] = function (block) {
+      return [block.getFieldValue("VAR"), javascriptGenerator.ORDER_ATOMIC];
+    };
+    return () => workspace.dispose();
   }, []);
 
-  // 🟡 Generate & Run JavaScript Code
   const handleRun = async () => {
-    if (!workspaceRef.current) return alert("Blockly workspace not initialized");
-
+    if (!workspaceRef.current) return;
     const code = javascriptGenerator.workspaceToCode(workspaceRef.current);
     setGeneratedCode(code);
-    console.log("Generated Code:\n", code);
+    setOutputLog([]);
 
     try {
-      await new Function(`return async () => { ${code} }`)()();
+      const outputLog = [];
+      const customFunctions = {
+        outputLog: outputLog,
+        print: (text) => outputLog.push(text),
+        alert: (message) => outputLog.push(`Alert: ${message}`),
+      };
+      await new Function("outputLog", "print", "alert", `${code}\nreturn outputLog;`)(outputLog, customFunctions.print, customFunctions.alert);
+      setOutputLog(outputLog);
       setSnackbarOpen(true);
     } catch (error) {
       console.error("Error executing Blockly code:", error);
@@ -147,24 +282,16 @@ function App() {
   };
 
   return (
-    <Container maxWidth="lg" sx={{ textAlign: "center", padding: "20px", height: "100vh", backgroundColor: "#f0f0f0" }}>
-      <Typography variant="h4" sx={{ fontWeight: "bold", marginBottom: "20px", color: "#333" }}>
-        Sheshgyan Code Editor 
-      </Typography>
-
-      {/* Blockly Workspace */}
-      <Box ref={blocklyDiv} sx={{ height: "75vh", width: "100%", border: "2px solid #ccc", borderRadius: "10px", backgroundImage: "radial-gradient(#ddd 1px, transparent 1px)", backgroundSize: "15px 15px", backgroundColor: "#f8f9fa", marginBottom: "20px" }} />
-
-      {/* Buttons Section */}
-      <Box sx={{ display: "flex", justifyContent: "center", gap: "15px", marginBottom: "20px" }}>
-        <Button variant="contained" startIcon={<PlayArrowIcon />} color="primary" onClick={handleRun}>
-          Run Code
-        </Button>
+    <Container>
+      <Typography variant="h4">Sheshgyan Code Editor</Typography>
+      <Box ref={blocklyDiv} sx={{ height: "60vh", width: "100%" }} />
+      <Button onClick={handleRun}>Run Code</Button>
+      <Box>
+        <Typography variant="h6">Generated Output:</Typography>
+        {outputLog.length === 0 ? <Typography>No output</Typography> : outputLog.map((line, index) => <Typography key={index}>{line}</Typography>)}
       </Box>
-
-      {/* Snackbar Notification */}
       <Snackbar open={snackbarOpen} autoHideDuration={3000} onClose={() => setSnackbarOpen(false)}>
-        <Alert severity="success" sx={{ width: "100%" }}>Code executed successfully!</Alert>
+        <Alert severity="success">Code executed successfully!</Alert>
       </Snackbar>
     </Container>
   );
