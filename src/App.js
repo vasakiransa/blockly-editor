@@ -5,6 +5,7 @@ import "blockly/blocks";
 import {
   Container,
   Typography,
+  Modal,
   Box,
   Button,
   Snackbar,
@@ -19,15 +20,29 @@ import {
 } from "@mui/material"; // Added FormControl, InputLabel, Select, MenuItem
 import PlayArrowIcon from "@mui/icons-material/PlayArrow";
 import SaveIcon from "@mui/icons-material/Save";
+
+import InfoIcon from "@mui/icons-material/Info";
+
 import FolderOpenIcon from "@mui/icons-material/FolderOpen";
+import HelpOutlineIcon from "@mui/icons-material/HelpOutline"; // ✅ Import Fixed
+import LightbulbIcon from "@mui/icons-material/Lightbulb"; // ✅ Import Fixed
 
 function App() {
+  const [open, setOpen] = useState(false);
+  const [popupContent, setPopupContent] = useState("");
   const blocklyDiv = useRef(null);
   const workspaceRef = useRef(null);
   const [generatedCode, setGeneratedCode] = useState("");
   const [outputLog, setOutputLog] = useState([]);
   const [snackbarOpen, setSnackbarOpen] = useState(false);
+  const handleOpen = (content) => {
+    setPopupContent(content);
+    setOpen(true);
+  };
 
+  const handleClose = () => {
+    setOpen(false);
+  };
   useEffect(() => {
     // Define custom blocks
     Blockly.Blocks["start_block"] = {
@@ -772,6 +787,62 @@ function App() {
         </Button>
       </Box>
   
+
+      <Box display="flex" justifyContent="flex-end" my={2} mr={2} gap={2}>
+      {/* Get Instructions Button */}
+      <Button
+        variant="contained"
+        color="primary"
+        onClick={() => handleOpen("Here are the instructions you need...")}
+        startIcon={<InfoIcon />}
+        endIcon={<PlayArrowIcon />}
+      >
+        Instructions
+      </Button>
+
+      {/* Get Help Button */}
+      <Button
+        variant="contained"
+        color="secondary"
+        onClick={() => handleOpen("This is the help section. Ask your question!")}
+        startIcon={<HelpOutlineIcon />}
+      >
+         Help
+      </Button>
+
+      {/* Hint Button */}
+      <Button
+        variant="contained"
+        color="success"
+        onClick={() => handleOpen("Here's a useful hint to guide you!")}
+        startIcon={<LightbulbIcon />}
+      >
+        Hint
+      </Button>
+
+      {/* Popup Modal */}
+      <Modal open={open} onClose={handleClose}>
+        <Box
+          sx={{
+            position: "absolute",
+            top: "50%",
+            left: "50%",
+            transform: "translate(-50%, -50%)",
+            width: 300,
+            bgcolor: "background.paper",
+            borderRadius: 2,
+            boxShadow: 24,
+            p: 3,
+          }}
+        >
+          <Typography variant="h6">{popupContent}</Typography>
+          <Button onClick={handleClose} sx={{ mt: 2 }} variant="contained">
+            Close
+          </Button>
+        </Box>
+      </Modal>
+    </Box>
+
       <div ref={blocklyDiv} style={{ height: "600px", width: "100%" }}></div>
   
       <Box mt={3} p={2} bgcolor="#f4f4f4" borderRadius={2}>
